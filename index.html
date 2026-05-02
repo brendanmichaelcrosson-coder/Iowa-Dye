@@ -5,71 +5,167 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="manifest" href="manifest.json">
     <title>Iowa Dye Tournament</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 720px;
+            margin: 0 auto;
+            padding: 1.5rem;
+            background: #f7f7f8;
+            color: #1a1a1a;
+        }
+        h1 { text-align: center; margin-bottom: 1.5rem; }
+        h2 { margin-top: 0; }
+        section {
+            background: #fff;
+            border: 1px solid #e2e2e6;
+            border-radius: 8px;
+            padding: 1rem 1.25rem;
+            margin-bottom: 1.25rem;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.04);
+        }
+        #team-list {
+            list-style: none;
+            padding: 0;
+            margin: 0 0 0.75rem 0;
+        }
+        #team-list li {
+            padding: 0.4rem 0.6rem;
+            border-bottom: 1px solid #eee;
+        }
+        #team-list li:last-child { border-bottom: none; }
+        .controls {
+            display: flex;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+        input[type="text"] {
+            flex: 1 1 200px;
+            padding: 0.5rem 0.65rem;
+            border: 1px solid #cfcfd4;
+            border-radius: 6px;
+            font-size: 1rem;
+        }
+        button {
+            padding: 0.5rem 0.9rem;
+            border: 1px solid #1a1a1a;
+            background: #1a1a1a;
+            color: #fff;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.95rem;
+        }
+        button.secondary {
+            background: #fff;
+            color: #1a1a1a;
+        }
+        button:hover { opacity: 0.9; }
+        .bracket {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        #bracket-container {
+            width: 100%;
+            min-height: 60px;
+            color: #555;
+        }
+    </style>
 </head>
 <body>
     <h1>Iowa Dye Tournament</h1>
-    <div id="teams">
+
+    <section id="teams">
         <h2>Teams</h2>
         <ul id="team-list"></ul>
-        <input type="text" id="team-input" placeholder="Add Team">
-        <button id="add-team">Add Team</button>
-        <button id="save-teams">Save Teams</button>
-    </div>
-    <div id="bracket">
+        <div class="controls">
+            <input type="text" id="team-input" placeholder="Add Team">
+            <button id="add-team">Add Team</button>
+            <button id="save-teams" class="secondary">Save Teams</button>
+        </div>
+    </section>
+
+    <section id="bracket">
         <h2>Bracket</h2>
-        <div id="bracket-container"></div>
-    </div>
+        <div class="bracket">
+            <div id="bracket-container">No bracket yet — add teams and save to generate.</div>
+        </div>
+    </section>
+
     <script>
-        // Array to hold teams
+        // Supabase scaffold (configure with your project URL/key when ready)
+        const supabaseUrl = 'https://your-supabase-url';
+        const supabaseKey = 'your-public-anon-key';
+        let supabaseClient = null;
+        try {
+            if (window.supabase && supabaseUrl.startsWith('https://') && !supabaseUrl.includes('your-supabase-url')) {
+                supabaseClient = window.supabase.createClient(supabaseUrl, supabaseKey);
+            }
+        } catch (e) {
+            console.warn('Supabase not initialized:', e);
+        }
+
+        // Team state
         let teams = [];
         const teamInput = document.getElementById('team-input');
         const teamList = document.getElementById('team-list');
         const bracketContainer = document.getElementById('bracket-container');
 
-        // Load teams from localStorage
-        const loadTeams = () => {
-            const storedTeams = JSON.parse(localStorage.getItem('teams')) || [];
-            teams = storedTeams;
+        const renderTeamList = () => {
+            teamList.innerHTML = '';
             teams.forEach(team => {
-                addTeamToList(team);
+                const li = document.createElement('li');
+                li.textContent = team;
+                teamList.appendChild(li);
             });
+        };
+
+        const renderBracket = () => {
+            bracketContainer.innerHTML = '';
+            if (teams.length === 0) {
+                bracketContainer.textContent = 'No bracket yet — add teams and save to generate.';
+                return;
+            }
+            teams.forEach(team => {
+                const div = document.createElement('div');
+                div.textContent = team;
+                bracketContainer.appendChild(div);
+            });
+        };
+
+        const loadTeams = () => {
+            const stored = JSON.parse(localStorage.getItem('teams')) || [];
+            teams = stored;
+            renderTeamList();
             renderBracket();
         };
 
-        // Add team to list
-        const addTeamToList = (team) => {
-            const li = document.createElement('li');
-            li.textContent = team;
-            teamList.appendChild(li);
-        };
-
-        // Add team button
         document.getElementById('add-team').addEventListener('click', () => {
-            const teamName = teamInput.value;
+            const teamName = teamInput.value.trim();
             if (teamName) {
                 teams.push(teamName);
-                addTeamToList(teamName);
+                renderTeamList();
                 teamInput.value = '';
                 renderBracket();
             }
         });
 
-        // Save teams button
         document.getElementById('save-teams').addEventListener('click', () => {
             localStorage.setItem('teams', JSON.stringify(teams));
             alert('Teams saved!');
         });
 
-        // Render bracket
-        const renderBracket = () => {
-            // Clear previous bracket
-            bracketContainer.innerHTML = '';
-            // Code to render bracket based on teams
-            // This can be a complex function depending on bracket requirements
-        };
-
-        // Load teams on page load
         window.onload = loadTeams;
+    </script>
+
+    <script>
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('service-worker.js')
+                .then(() => console.log('Service Worker Registered'))
+                .catch(error => console.error('Service Worker Registration Failed:', error));
+        }
     </script>
 </body>
 </html>
